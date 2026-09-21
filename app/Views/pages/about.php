@@ -13,7 +13,7 @@ Required pages: a landing page (/), an about page (/about), a Customer Accounts 
 </p>
 
 
-<h2>How MVC Works in This Project</h2>
+<h2>How MVC Works in This Assignment</h2>
 <ul>
     <li><strong>Routes</strong> — Defined in <code>app/Config/Routes.php</code>. They decide which controller runs when you visit a URL.</li>
     <li><strong>Controllers</strong> — In <code>app/Controllers/</code>. They handle what happens and prepare data, call views.</li>

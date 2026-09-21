@@ -15,11 +15,11 @@
     <tbody>
         <?php foreach ($customers as $customer): ?>
         <tr>
-            <!-- full_name -->
+      
             <td><?= esc($customer['full_name']) ?></td>
-            <!-- email -->
+           
             <td><?= esc($customer['email']) ?></td>
-            <!-- phone -->
+            
             <td><?= esc($customer['phone']) ?></td>
         </tr>
         <?php endforeach; ?>

@@ -15,12 +15,12 @@
     <tbody>
         <?php foreach ($users as $user): ?>
         <tr>
-            <!-- username -->
+          
             <td><?= esc($user['username']) ?></td>
-            <!-- full_name -->
+          
             <td><?= esc($user['full_name']) ?></td>
-            <!-- role -->
-            <td><?= esc($user['role']) ?></td>
+
+       
         </tr>
         <?php endforeach; ?>
     </tbody>
