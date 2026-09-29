@@ -1,0 +1,5 @@
+# Prevent direct PHP execution in the upload directory.
+# Static image files (jpg, png) are still served normally.
+<FilesMatch "\.php$">
+  Require all denied
+</FilesMatch>
