@@ -9,7 +9,7 @@ use CodeIgniter\Model;
  *
  * Handles CRUD for the `users` table.
  * The `avatar` column stores only a filename (no path).
- * Validation rules vary between insert and update (uniqueness check).
+ * The `password` column stores a password_hash() digest.
  */
 class UserModel extends Model
 {
@@ -22,6 +22,7 @@ class UserModel extends Model
         'username',
         'full_name',
         'email',
+        'password',
         'avatar',
         'created_at',
     ];
@@ -31,6 +32,7 @@ class UserModel extends Model
         'username'  => 'required|min_length[3]|max_length[50]|alpha_dash|is_unique[users.username]',
         'full_name' => 'required|min_length[2]|max_length[100]',
         'email'     => 'permit_empty|valid_email|max_length[100]',
+        'password'  => 'permit_empty|min_length[8]',
     ];
 
     protected $validationMessages = [
@@ -49,6 +51,9 @@ class UserModel extends Model
         'email' => [
             'valid_email' => 'Please enter a valid email address.',
             'max_length'  => 'Email may not exceed 100 characters.',
+        ],
+        'password' => [
+            'min_length' => 'Password must be at least 8 characters.',
         ],
     ];
 

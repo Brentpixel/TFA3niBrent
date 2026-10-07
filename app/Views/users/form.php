@@ -114,6 +114,54 @@ $avatarFile = ($isEdit && ! empty($user['avatar']))
       <?php endif; ?>
     </div>
 
+    <!-- Password Field -->
+    <div class="form-group">
+      <label for="password">
+        <?= $isEdit ? 'New Password' : 'Password' ?>
+        <?php if (! $isEdit): ?><span style="color:var(--danger)">*</span><?php endif; ?>
+      </label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
+        placeholder="<?= $isEdit ? 'Leave blank to keep existing password' : 'At least 8 characters' ?>"
+        minlength="8"
+        <?= $isEdit ? '' : 'required' ?>
+        autocomplete="new-password"
+      />
+      <div class="form-hint">
+        <?= $isEdit
+          ? 'Leave blank to keep current password. If updating, must be at least 8 characters.'
+          : 'Required. Minimum 8 characters.' ?>
+      </div>
+      <?php if (isset($errors['password'])): ?>
+        <div class="field-error" id="err-password"><?= esc($errors['password']) ?></div>
+      <?php endif; ?>
+    </div>
+
+    <!-- Password Confirmation -->
+    <div class="form-group">
+      <label for="password_confirm">
+        <?= $isEdit ? 'Confirm New Password' : 'Confirm Password' ?>
+        <?php if (! $isEdit): ?><span style="color:var(--danger)">*</span><?php endif; ?>
+      </label>
+      <input
+        type="password"
+        id="password_confirm"
+        name="password_confirm"
+        class="form-control <?= isset($errors['password_confirm']) ? 'is-invalid' : '' ?>"
+        placeholder="Re-enter password"
+        minlength="8"
+        <?= $isEdit ? '' : 'required' ?>
+        autocomplete="new-password"
+      />
+      <div class="form-hint">Must match password exactly.</div>
+      <?php if (isset($errors['password_confirm'])): ?>
+        <div class="field-error" id="err-password_confirm"><?= esc($errors['password_confirm']) ?></div>
+      <?php endif; ?>
+    </div>
+
     <?php if ($isEdit): ?>
     <!-- Avatar Upload (edit only) -->
     <div class="form-group">

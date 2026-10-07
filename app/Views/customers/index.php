@@ -24,6 +24,9 @@
 <?php if ($flash): ?>
   <div class="flash flash-success" role="alert"><?= esc($flash) ?></div>
 <?php endif; ?>
+<?php if (session()->getFlashdata('error')): ?>
+  <div class="flash flash-error" role="alert"><?= esc(session()->getFlashdata('error')) ?></div>
+<?php endif; ?>
 
 <?php if (empty($customers)): ?>
   <div class="empty-state">

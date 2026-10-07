@@ -19,6 +19,13 @@
   <p class="subtitle">Showing tasks scheduled for <strong><?= esc($todayLabel) ?></strong> (Asia/Manila)</p>
 </div>
 
+<?php if (session()->getFlashdata('success')): ?>
+  <div class="flash flash-success" role="alert"><?= esc(session()->getFlashdata('success')) ?></div>
+<?php endif; ?>
+<?php if (session()->getFlashdata('error')): ?>
+  <div class="flash flash-error" role="alert"><?= esc(session()->getFlashdata('error')) ?></div>
+<?php endif; ?>
+
 <?php if (empty($tasks)): ?>
   <!-- Empty state — shown when no tasks match today's date -->
   <div class="empty-state">

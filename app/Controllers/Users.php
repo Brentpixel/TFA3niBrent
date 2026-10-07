@@ -8,11 +8,11 @@ use App\Models\UserModel;
  * Users Controller
  *
  * Routes (defined in app/Config/Routes.php):
- *   GET  /users              → index()   — listing with avatars
+ *   GET  /users              → index()   — listing with avatars (no password hashes exposed)
  *   GET  /users/new          → newForm() — blank create form
- *   POST /users/new          → create()  — process create
- *   GET  /users/(:num)/edit  → edit()    — pre-filled edit form with avatar upload
- *   POST /users/(:num)/edit  → update()  — process update + avatar upload
+ *   POST /users/new          → create()  — process create with password confirmation + hashing
+ *   GET  /users/(:num)/edit  → edit()    — pre-filled edit form with avatar & optional password change
+ *   POST /users/(:num)/edit  → update()  — process update + avatar upload + optional password hash
  */
 class Users extends BaseController
 {
@@ -84,10 +84,10 @@ class Users extends BaseController
 
         imagecopyresampled(
             $thumb, $src,
-            0, 0,                  // destination x, y
-            $cropX, $cropY,        // source x, y
+            0, 0,                                 // destination x, y
+            $cropX, $cropY,                       // source x, y
             $this->thumbSize, $this->thumbSize,   // destination w, h
-            $cropSide, $cropSide   // source w, h
+            $cropSide, $cropSide                  // source w, h
         );
 
         imagedestroy($src);
@@ -107,7 +107,9 @@ class Users extends BaseController
         return view('users/index', [
             'pageTitle' => 'User Accounts',
             'title'     => 'User Accounts',
-            'users'     => $model->orderBy('id', 'ASC')->findAll(),
+            'users'     => $model->select('id, username, full_name, email, avatar, created_at')
+                                 ->orderBy('id', 'ASC')
+                                 ->findAll(),
             'flash'     => session()->getFlashdata('success'),
         ]);
     }
@@ -129,25 +131,81 @@ class Users extends BaseController
     {
         $model = new UserModel();
 
-        $data = [
-            'username'   => trim($this->request->getPost('username')),
-            'full_name'  => trim($this->request->getPost('full_name')),
-            'email'      => trim($this->request->getPost('email')),
-            'created_at' => date('Y-m-d H:i:s'),
+        $rules = [
+            'username'         => 'required|min_length[3]|max_length[50]|alpha_dash|is_unique[users.username]',
+            'full_name'        => 'required|min_length[2]|max_length[100]',
+            'email'            => 'permit_empty|valid_email|max_length[100]',
+            'password'         => 'required|min_length[8]',
+            'password_confirm' => 'required|matches[password]',
         ];
 
-        // No avatar on create (only editable after record exists)
-        if (! $model->insert($data)) {
-            session()->setFlashdata('errors', $model->errors());
+        $messages = [
+            'username' => [
+                'required'   => 'Username is required.',
+                'min_length' => 'Username must be at least 3 characters.',
+                'max_length' => 'Username may not exceed 50 characters.',
+                'alpha_dash' => 'Username may only contain letters, numbers, underscores, and dashes.',
+                'is_unique'  => 'That username is already taken. Please choose another.',
+            ],
+            'full_name' => [
+                'required'   => 'Full name is required.',
+                'min_length' => 'Full name must be at least 2 characters.',
+                'max_length' => 'Full name may not exceed 100 characters.',
+            ],
+            'email' => [
+                'valid_email' => 'Please enter a valid email address.',
+                'max_length'  => 'Email may not exceed 100 characters.',
+            ],
+            'password' => [
+                'required'   => 'Password is required.',
+                'min_length' => 'Password must be at least 8 characters.',
+            ],
+            'password_confirm' => [
+                'required' => 'Please confirm your password.',
+                'matches'  => 'Password confirmation does not match the password.',
+            ],
+        ];
+
+        $validation = \Config\Services::validation();
+        $validation->setRules($rules, $messages);
+
+        $rawUsername = trim((string) $this->request->getPost('username'));
+        $rawFullName = trim((string) $this->request->getPost('full_name'));
+        $rawEmail    = trim((string) $this->request->getPost('email'));
+
+        if (! $validation->withRequest($this->request)->run()) {
+            session()->setFlashdata('errors', $validation->getErrors());
+            // Never preserve plain-text password or confirmation in session
             session()->setFlashdata('old', [
-                'username'  => $data['username'],
-                'full_name' => $data['full_name'],
-                'email'     => $data['email'],
+                'username'  => $rawUsername,
+                'full_name' => $rawFullName,
+                'email'     => $rawEmail,
             ]);
             return redirect()->to(base_url('/users/new'));
         }
 
-        session()->setFlashdata('success', 'User "' . esc($data['username']) . '" was added successfully.');
+        $passwordRaw = (string) $this->request->getPost('password');
+        $hashedPassword = password_hash($passwordRaw, PASSWORD_DEFAULT);
+
+        $data = [
+            'username'   => $rawUsername,
+            'full_name'  => $rawFullName,
+            'email'      => $rawEmail,
+            'password'   => $hashedPassword,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if (! $model->skipValidation(true)->insert($data)) {
+            session()->setFlashdata('errors', $model->errors());
+            session()->setFlashdata('old', [
+                'username'  => $rawUsername,
+                'full_name' => $rawFullName,
+                'email'     => $rawEmail,
+            ]);
+            return redirect()->to(base_url('/users/new'));
+        }
+
+        session()->setFlashdata('success', 'User "' . esc($rawUsername) . '" was added successfully.');
         return redirect()->to(base_url('/users'));
     }
 
@@ -162,6 +220,9 @@ class Users extends BaseController
                 "User #{$id} not found."
             );
         }
+
+        // Never expose password hash to the view
+        unset($user['password']);
 
         return view('users/form', [
             'pageTitle'  => 'Edit User',
@@ -184,12 +245,13 @@ class Users extends BaseController
             );
         }
 
-        $newUsername = trim($this->request->getPost('username'));
-        $newFullName = trim($this->request->getPost('full_name'));
-        $newEmail    = trim($this->request->getPost('email'));
+        $newUsername = trim((string) $this->request->getPost('username'));
+        $newFullName = trim((string) $this->request->getPost('full_name'));
+        $newEmail    = trim((string) $this->request->getPost('email'));
+        $newPassword = (string) $this->request->getPost('password');
 
         // ── Build validation rules for update ─────────────────────────────
-        // If the username is unchanged we skip the unique check for this row.
+        // Skip uniqueness check if username is unchanged for this user
         if ($newUsername === $user['username']) {
             $usernameRule = 'required|min_length[3]|max_length[50]|alpha_dash';
         } else {
@@ -221,12 +283,27 @@ class Users extends BaseController
             ],
         ];
 
+        // Optional password change
+        if (! empty($newPassword)) {
+            $rules['password']         = 'min_length[8]';
+            $rules['password_confirm'] = 'required|matches[password]';
+
+            $messages['password'] = [
+                'min_length' => 'New password must be at least 8 characters.',
+            ];
+            $messages['password_confirm'] = [
+                'required' => 'Please confirm your new password.',
+                'matches'  => 'Password confirmation does not match the new password.',
+            ];
+        }
+
         // Run field validation
         $validation = \Config\Services::validation();
         $validation->setRules($rules, $messages);
 
         if (! $validation->withRequest($this->request)->run()) {
             session()->setFlashdata('errors', $validation->getErrors());
+            // Never preserve plain-text password in session
             session()->setFlashdata('old', [
                 'username'  => $newUsername,
                 'full_name' => $newFullName,
@@ -292,7 +369,7 @@ class Users extends BaseController
             // ── Generate 200×200 thumbnail (overwrites the moved file) ────
             $movedPath = $this->uploadDir() . $newFilename;
             if (! $this->makeThumbnail($movedPath, $mime)) {
-                // GD unavailable or failed — original file kept as-is; that's fine
+                // GD unavailable or failed — original file kept as-is
             }
 
             // Delete old avatar file if it exists and is different
@@ -308,12 +385,19 @@ class Users extends BaseController
         }
 
         // ── Persist changes ────────────────────────────────────────────────
-        $model->skipValidation(true)->update($id, [
+        $updateData = [
             'username'  => $newUsername,
             'full_name' => $newFullName,
             'email'     => $newEmail,
             'avatar'    => $newAvatar,
-        ]);
+        ];
+
+        // Only update password if a new one was provided
+        if (! empty($newPassword)) {
+            $updateData['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
+        }
+
+        $model->skipValidation(true)->update($id, $updateData);
 
         session()->setFlashdata('success', 'User "' . esc($newUsername) . '" was updated successfully.');
         return redirect()->to(base_url('/users'));

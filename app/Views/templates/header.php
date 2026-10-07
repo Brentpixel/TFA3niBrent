@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- SEO -->
-  <title><?= esc($pageTitle ?? 'POS System') ?> — IT0049 TFA3</title>
-  <meta name="description" content="CodeIgniter 4 POS System — IT0049 Technical Summative Assessment 3 by Brent Verdera." />
+  <title><?= esc($pageTitle ?? 'POS System') ?> — IT0049 TFA4</title>
+  <meta name="description" content="CodeIgniter 4 POS System — IT0049 Technical Summative Assessment 4 by Brent Verdera." />
 
   <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -578,16 +578,52 @@
     .actions-col { white-space: nowrap; }
     .actions-col .btn + .btn { margin-left: .4rem; }
 
+    /* ── Auth navbar controls ──────────────────────────────────────────────── */
+    .nav-auth {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-left: .5rem;
+    }
+
+    .nav-user {
+      font-size: .8rem;
+      color: var(--accent2);
+      font-weight: 500;
+      padding: .28rem .65rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      white-space: nowrap;
+    }
+
+    .nav-user .user-role {
+      font-size: .7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
     @media (max-width: 640px) {
       .profile-card { flex-direction: column; text-align: center; }
       .profile-meta { align-items: center; }
       .page-header { flex-direction: column; align-items: flex-start; }
-      .navbar { flex-wrap: wrap; height: auto; padding: .75rem 1rem; gap: .5rem; }
+      .navbar { flex-wrap: wrap; height: auto; padding: .75rem 1rem; gap: .75rem; }
       .container { padding: 1.5rem 1rem 3rem; }
+      .nav-auth { margin-left: 0; width: 100%; justify-content: flex-end; }
     }
   </style>
 </head>
 <body>
+
+<?php
+  $authSession     = session();
+  $isLoggedIn      = (bool) $authSession->get('is_logged_in');
+  $sessionUserName = $authSession->get('full_name') ?: $authSession->get('username');
+?>
 
 <!-- ── Navigation ─────────────────────────────────────────────────────────── -->
 <nav class="navbar">
@@ -595,14 +631,31 @@
     <span class="dot"></span>
     POS System
   </a>
-  <ul class="nav-links">
-    <li><a href="<?= base_url('/') ?>"          <?= (current_url() === base_url('/'))            ? 'class="active"' : '' ?>>Home</a></li>
-    <li><a href="<?= base_url('/tasks') ?>"      <?= str_ends_with(current_url(), '/tasks')       ? 'class="active"' : '' ?>>All Tasks</a></li>
-    <li><a href="<?= base_url('/customers') ?>"  <?= str_contains(current_url(), '/customers')    ? 'class="active"' : '' ?>>Customers</a></li>
-    <li><a href="<?= base_url('/users') ?>"      <?= str_contains(current_url(), '/users')        ? 'class="active"' : '' ?>>Users</a></li>
-    <li><a href="<?= base_url('/profile') ?>"    <?= str_ends_with(current_url(), '/profile')     ? 'class="active"' : '' ?>>Profile</a></li>
-    <li><a href="<?= base_url('/about') ?>"      <?= str_ends_with(current_url(), '/about')       ? 'class="active"' : '' ?>>About</a></li>
-  </ul>
+
+  <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <ul class="nav-links">
+      <li><a href="<?= base_url('/') ?>"          <?= (current_url() === base_url('/'))            ? 'class="active"' : '' ?>>Home</a></li>
+      <li><a href="<?= base_url('/tasks') ?>"      <?= str_ends_with(current_url(), '/tasks')       ? 'class="active"' : '' ?>>All Tasks</a></li>
+      <li><a href="<?= base_url('/customers') ?>"  <?= str_contains(current_url(), '/customers')    ? 'class="active"' : '' ?>>Customers</a></li>
+      <li><a href="<?= base_url('/users') ?>"      <?= str_contains(current_url(), '/users')        ? 'class="active"' : '' ?>>Users</a></li>
+      <li><a href="<?= base_url('/profile') ?>"    <?= str_ends_with(current_url(), '/profile')     ? 'class="active"' : '' ?>>Profile</a></li>
+      <li><a href="<?= base_url('/about') ?>"      <?= str_ends_with(current_url(), '/about')       ? 'class="active"' : '' ?>>About</a></li>
+    </ul>
+
+    <div class="nav-auth">
+      <?php if ($isLoggedIn): ?>
+        <span class="nav-user">
+          <span class="user-role">User:</span> <?= esc($sessionUserName) ?>
+        </span>
+        <form action="<?= base_url('/logout') ?>" method="post" style="display:inline;margin:0;">
+          <?= csrf_field() ?>
+          <button type="submit" id="btn-logout" class="btn btn-secondary btn-sm">Logout</button>
+        </form>
+      <?php else: ?>
+        <a href="<?= base_url('/login') ?>" id="btn-login-nav" class="btn btn-primary btn-sm <?= str_contains(current_url(), '/login') ? 'active' : '' ?>">Login</a>
+      <?php endif; ?>
+    </div>
+  </div>
 </nav>
 
 <main class="container">

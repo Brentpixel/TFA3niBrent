@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Filters;
+
+use CodeIgniter\Filters\FilterInterface;
+use CodeIgniter\HTTP\RequestInterface;
+use CodeIgniter\HTTP\ResponseInterface;
+
+/**
+ * AuthFilter
+ *
+ * Enforces session authentication for protected routes (Customers, Users).
+ * Unauthenticated users are redirected to the login page with a flash notice.
+ */
+class AuthFilter implements FilterInterface
+{
+    /**
+     * Do whatever processing this filter needs to do.
+     * By default it should not return anything during
+     * normal execution. However, when an abnormal state
+     * is found, it should return an instance of
+     * CodeIgniter\HTTP\Response. If it does, script
+     * execution will end and that Response will be
+     * sent back to the client, allowing for error pages,
+     * redirects, etc.
+     *
+     * @param array|null $arguments
+     *
+     * @return mixed
+     */
+    public function before(RequestInterface $request, $arguments = null)
+    {
+        $session = session();
+
+        if (! $session->get('is_logged_in')) {
+            $session->setFlashdata('error', 'Please log in to access this page.');
+            return redirect()->to(base_url('/login'));
+        }
+
+        return null;
+    }
+
+    /**
+     * Allows After filters to inspect and modify the response
+     * object as needed. This method does not allow any way
+     * to stop execution of other after filters, short of
+     * throwing an Exception or Error.
+     *
+     * @param array|null $arguments
+     *
+     * @return mixed
+     */
+    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
+    {
+        // No post-processing required
+    }
+}

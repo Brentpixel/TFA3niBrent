@@ -4,45 +4,46 @@ use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
 
-// ── IT0049 TFA3: Forms, Validation, and File Upload ──────────────────────────
+// ── IT0049 TFA4: Who's Allowed In? Sessions and Authentication ───────────────
 //
-//  Core pages (TFA1 / TFA2)
+//  Public routes:
 //  /          → Home::index()
 //  /tasks     → Tasks::index()
 //  /profile   → Profile::index()
 //  /about     → About::index()
+//  /login     → Auth::login() (GET) | Auth::processLogin() (POST)
+//  /logout    → Auth::logout() (POST / GET fallback)
 //
-//  Customers (TFA3)
-//  GET  /customers            → Customers::index()
-//  GET  /customers/new        → Customers::newForm()
-//  POST /customers/new        → Customers::create()
-//  GET  /customers/(:num)/edit→ Customers::edit($id)
-//  POST /customers/(:num)/edit→ Customers::update($id)
-//
-//  Users (TFA3)
-//  GET  /users                → Users::index()
-//  GET  /users/new            → Users::newForm()
-//  POST /users/new            → Users::create()
-//  GET  /users/(:num)/edit    → Users::edit($id)
-//  POST /users/(:num)/edit    → Users::update($id)
+//  Protected routes (enforced by AuthFilter):
+//  Customers: /customers, /customers/new, /customers/(:num)/edit
+//  Users:     /users, /users/new, /users/(:num)/edit
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Core routes ───────────────────────────────────────────────────────────────
+// ── Public core routes ───────────────────────────────────────────────────────
 $routes->get('/',        'Home::index');
 $routes->get('/tasks',   'Tasks::index');
 $routes->get('/profile', 'Profile::index');
 $routes->get('/about',   'About::index');
 
-// ── Customers ─────────────────────────────────────────────────────────────────
-$routes->get( '/customers',             'Customers::index');
-$routes->get( '/customers/new',         'Customers::newForm');
-$routes->post('/customers/new',         'Customers::create');
-$routes->get( '/customers/(:num)/edit', 'Customers::edit/$1');
-$routes->post('/customers/(:num)/edit', 'Customers::update/$1');
+// ── Authentication routes ───────────────────────────────────────────────────
+$routes->get('/login',   'Auth::login');
+$routes->post('/login',  'Auth::processLogin');
+$routes->post('/logout', 'Auth::logout');
+$routes->get('/logout',  'Auth::logout');
 
-// ── Users ─────────────────────────────────────────────────────────────────────
-$routes->get( '/users',             'Users::index');
-$routes->get( '/users/new',         'Users::newForm');
-$routes->post('/users/new',         'Users::create');
-$routes->get( '/users/(:num)/edit', 'Users::edit/$1');
-$routes->post('/users/(:num)/edit', 'Users::update/$1');
+// ── Protected routes (Requires AuthFilter) ──────────────────────────────────
+$routes->group('', ['filter' => 'auth'], static function ($routes) {
+    // Customers (CRUD)
+    $routes->get( '/customers',             'Customers::index');
+    $routes->get( '/customers/new',         'Customers::newForm');
+    $routes->post('/customers/new',         'Customers::create');
+    $routes->get( '/customers/(:num)/edit', 'Customers::edit/$1');
+    $routes->post('/customers/(:num)/edit', 'Customers::update/$1');
+
+    // Users (CRUD)
+    $routes->get( '/users',             'Users::index');
+    $routes->get( '/users/new',         'Users::newForm');
+    $routes->post('/users/new',         'Users::create');
+    $routes->get( '/users/(:num)/edit', 'Users::edit/$1');
+    $routes->post('/users/(:num)/edit', 'Users::update/$1');
+});
